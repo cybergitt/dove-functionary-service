@@ -1,3 +1,39 @@
 spring:
   application:
     name: functionary-service
+  profiles:
+    active: dev
+  main:
+    allow-bean-definition-overriding: false
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+  jetty:
+    threads:
+      max: 200 # Maximum number of threads in the Jetty thread pool
+      min: 8 # Minimum number of threads in the Jetty thread pool
+    connection-idle-timeout: 30s # Idle timeout for connections
+    accesslog:
+      enabled: true # Enable Jetty server access logs
+      # Other access log properties can be configured here
+    # ssl: # Example SSL configuration
+    #   enabled: true
+    #   key-store: classpath:keystore.jks
+    #   key-store-password: password
+    #   key-alias: myalias
+
+logging:
+  config: classpath:log4j2-spring.xml
+  level:
+    root: INFO
+    '[org.springframework.web]': WARN
+    '[org.hibernate]': WARN
+    '[com.sinodash.getdovenote.api.functionary_service.features]': DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus

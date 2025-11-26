@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+  <Properties>
+    <Property name="LOG_PATTERN">%style{%d{ISO8601}}{white} [%style{%t}{bright,yellow}] %highlight{%-5level} %logger{36} - %msg%n%throwable</Property>
+    <property name="LOG_DIR" value="./logs" />
+	<property name="LOG_FILE_NAME" value="app" />
+  </Properties>
+
+  <Appenders>
+    <!-- Console for local debugging -->
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="${LOG_PATTERN}"/>
+    </Console>
+
+    <!-- Rolling file (text) -->
+    <RollingFile name="AppFile" fileName="${LOG_DIR}/${LOG_FILE_NAME}.log" filePattern="${LOG_DIR}/${LOG_FILE_NAME}-%d{yyyy-MM-dd}-%i.log.gz">
+      <PatternLayout pattern="${LOG_PATTERN}"/>
+      <Policies>
+        <TimeBasedTriggeringPolicy interval="1"/>
+        <SizeBasedTriggeringPolicy size="100MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="30"/>
+    </RollingFile>
+
+    <!-- Async wrapper to reduce I/O latency -->
+    <Async name="AsyncApp">
+      <AppenderRef ref="AppFile" />
+    </Async>
+
+    <!-- JSON appender for centralized logging (ELK/EFK) -->
+    <RollingFile name="JsonFile" fileName="${LOG_DIR}/${LOG_FILE_NAME}.json" filePattern="${LOG_DIR}/${LOG_FILE_NAME}-%d{yyyy-MM-dd}-%i.json.gz">
+      <JsonLayout complete="false" compact="true" eventEol="true" includeStacktrace="true"/>
+      <Policies>
+        <TimeBasedTriggeringPolicy interval="1"/>
+        <SizeBasedTriggeringPolicy size="200MB"/>
+      </Policies>
+    </RollingFile>
+
+    <!-- Routing (audit/security) -->
+    <Routing name="RoutingAppender">
+      <Routes pattern="$${ctx:audit}">
+        <Route key="audit">
+          <RollingFile fileName="${LOG_DIR}/audit.log" filePattern="${LOG_DIR}/audit-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+          </RollingFile>
+        </Route>
+      </Routes>
+    </Routing>
+  </Appenders>
+
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="AsyncApp"/>
+      <AppenderRef ref="JsonFile"/>
+    </Root>
+
+    <!-- Audit logger -->
+    <Logger name="com.example.app.audit" level="INFO" additivity="false">
+      <AppenderRef ref="RoutingAppender"/>
+    </Logger>
+
+    <!-- Adjust libs that chatty loggers like org.apache to WARN -->
+    <Logger name="org.apache" level="WARN"/>
+    <Logger name="org.springframework" level="WARN"/>
+  </Loggers>
+</Configuration>
